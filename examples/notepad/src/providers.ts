@@ -60,17 +60,8 @@ const signIn = async (connector: Providers) => {
         throw new Error('Address not found.');
     }
 
-    /**
-     * Try to resolve address ENS and updates the title accordingly.
-     */
-    let ens: string;
-    try {
-        ens = await provider.lookupAddress(address);
-    } catch (error) {
-        console.error(error);
-    }
 
-    updateTitle(ens ?? address);
+    updateTitle(address);
 
     /**
      * Gets a nonce from our backend, this will add this nonce to the session so
@@ -92,6 +83,8 @@ const signIn = async (connector: Providers) => {
         nonce,
     });
 
+    console.log(message);
+
     /**
      * Generates the message to be signed and uses the provider to ask for a signature
      */
@@ -104,13 +97,13 @@ const signIn = async (connector: Providers) => {
      */
     fetch(`/api/sign_in`, {
         method: 'POST',
-        body: JSON.stringify({ message, ens }),
+        body: JSON.stringify({ message }),
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
     }).then(async (res) => {
         if (res.status === 200) {
-            res.json().then(({ text, address, ens }) => {
-                connectedState(text, address, ens);
+            res.json().then(({ text, address }) => {
+                connectedState(text, address);
                 return;
             });
         } else {
@@ -154,8 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     fetch('/api/me', { credentials: 'include' }).then((res) => {
         if (res.status === 200) {
-            res.json().then(({ text, address, ens }) => {
-                connectedState(text, address, ens);
+            res.json().then(({ text, address }) => {
+                connectedState(text, address);
             });
         } else {
             /**
@@ -207,7 +200,7 @@ const enableSave = () => {
 
 Mousetrap.bind('mod+s', save);
 
-const connectedState = (text: string, address: string, ens: string) => {
+const connectedState = (text: string, address: string) => {
     /**
      * Updates fields and buttons
      */
@@ -221,7 +214,7 @@ const connectedState = (text: string, address: string, ens: string) => {
         updateNotepad(text);
     }
     blockSave();
-    updateTitle(ens ?? address);
+    updateTitle(address);
 };
 
 const disconnectedState = () => {

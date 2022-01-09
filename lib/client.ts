@@ -222,7 +222,9 @@ export class SiweMessage {
 					message,
 					this.signature
 				);
-
+				console.log('addr, this.address', addr, this.address, addr === this.address)
+				console.log(message)
+				console.log('signature', this.signature)
 				if (addr !== this.address) {
 					try {
 						//EIP-1271

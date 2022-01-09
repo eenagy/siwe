@@ -12,6 +12,7 @@ import Helmet from 'helmet';
 import Morgan from 'morgan';
 import Path from 'path';
 import FileStore from 'session-file-store';
+import cors from 'cors';
 import { ErrorTypes, SiweMessage, generateNonce } from 'siwe';
 const FileStoreStore = FileStore(Session);
 
@@ -40,6 +41,13 @@ declare module 'express-session' {
 
 const app = Express();
 
+app.use(
+    cors({
+        origin: 'http://localhost:3000',
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+    }),
+);
 /**
  * CSP Policies
  */
@@ -97,11 +105,14 @@ app.post('/api/sign_in', async (req, res) => {
         }
 
         const message = new SiweMessage(req.body.message);
-
+        const url =
+            Number.parseInt(message.chainId) === 31337
+                ? 'http://localhost:8545'
+                : `${getInfuraUrl(message.chainId)}/8a02670ec78741cfbe462e6ba001bd0b`;
         const infuraProvider = new providers.JsonRpcProvider(
             {
                 allowGzip: true,
-                url: `${getInfuraUrl(message.chainId)}/8fcacee838e04f31b6ec145eb98879c8`,
+                url,
                 headers: {
                     Accept: '*/*',
                     Origin: `http://localhost:${PORT}`,
@@ -115,7 +126,6 @@ app.post('/api/sign_in', async (req, res) => {
         await infuraProvider.ready;
 
         const fields: SiweMessage = await message.validate(infuraProvider);
-
         if (fields.nonce !== req.session.nonce) {
             res.status(422).json({
                 message: `Invalid nonce.`,
